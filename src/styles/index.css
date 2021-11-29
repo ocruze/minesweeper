@@ -35,3 +35,7 @@ body {
 .square:hover {
   background: #cecccc;
 }
+
+.square.uncovered {
+  background: #ffffff;
+}

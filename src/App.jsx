@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Square from "./Square";
 
 function App() {
-  const MAX = 16;
-  const MIN = 8;
+  const MAX = 32;
+  const MIN = 16;
 
   const [numRows, setNumRows] = useState(MIN);
   const [numCols, setNumCols] = useState(MIN);
@@ -25,6 +25,24 @@ function App() {
       newMinefield.push(cols);
     }
 
+    // const numMines = 40;
+
+    // for (let k = 0; k < numMines; k++) {
+    //   let alreadyMinesNum = null;
+    //   let randRow = null;
+    //   let randCol = null;
+
+    //   do {
+    //     randRow = Math.floor(Math.random() * numRows);
+    //     randCol = Math.floor(Math.random() * numCols);
+
+    //     let adjSquares = getAdjacentSquares(randRow, randCol);
+    //     alreadyMinesNum = getAdjacentSquaresWithBomb(adjSquares);
+    //   } while (alreadyMinesNum > 2);
+
+    //   newMinefield[randRow][randCol].placeMine();
+    // }
+
     setMinefield(newMinefield);
   };
 
@@ -41,58 +59,52 @@ function App() {
     return true;
   };
 
-  const calculateAdjacentMines = (indexRow, indexCol) => {
+  const getAdjacentSquares = (indexRow, indexCol) => {
+    let adjSquares = [];
+    let possibleAdjacent = [
+      [indexRow - 1, indexCol - 1],
+      [indexRow - 1, indexCol],
+      [indexRow - 1, indexCol + 1],
+      [indexRow, indexCol - 1],
+      [indexRow, indexCol + 1],
+      [indexRow + 1, indexCol - 1],
+      [indexRow + 1, indexCol],
+      [indexRow + 1, indexCol + 1],
+    ];
+
+    possibleAdjacent.forEach((coord) => {
+      try {
+        if (minefield[coord[0]][coord[1]]) {
+          adjSquares.push(coord);
+        }
+      } catch (error) {}
+    });
+
+    return adjSquares;
+  };
+
+  const getAdjacentSquaresWithBomb = (adjSquares) => {
     let numMines = 0;
 
-    try {
-      if (minefield[indexRow - 1][indexCol - 1].hasBomb) {
+    adjSquares.forEach((coord) => {
+      if (minefield[coord[0]][coord[1]].hasBomb) {
         numMines++;
       }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow - 1][indexCol].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow - 1][indexCol + 1].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow][indexCol - 1].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow][indexCol + 1].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow + 1][indexCol - 1].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow + 1][indexCol].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
-
-    try {
-      if (minefield[indexRow + 1][indexCol + 1].hasBomb) {
-        numMines++;
-      }
-    } catch (error) {}
+    });
 
     return numMines;
+  };
+
+  const uncoverAdjacentMinesRecursive = (adjSquares) => {
+    adjSquares.forEach((coord) => {
+      let subAdjSquares = getAdjacentSquares(coord[0], coord[1]);
+      let subNumMines = getAdjacentSquaresWithBomb(subAdjSquares);
+      minefield[coord[0]][coord[1]].setAdjacentMines(subNumMines);
+
+      if (subNumMines === 0) {
+        uncoverAdjacentMinesRecursive(subAdjSquares);
+      }
+    });
   };
 
   const handleNumRowsChange = (e) => {
@@ -114,8 +126,12 @@ function App() {
       if (square.hasBomb) {
         setGameover(true);
       } else {
-        const numMines = calculateAdjacentMines(indexRow, indexCol);
+        const adjSquares = getAdjacentSquares(indexRow, indexCol);
+        const numMines = getAdjacentSquaresWithBomb(adjSquares);
         square.setAdjacentMines(numMines);
+
+        uncoverAdjacentMinesRecursive(adjSquares);
+        // setMinefield([...minefield]);
       }
     } else if (e.type === "contextmenu") {
       square.flag();
@@ -133,7 +149,9 @@ function App() {
     if (gameover) {
       for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
-          minefield[i][j].setAdjacentMines(calculateAdjacentMines(i, j));
+          const adjSquares = getAdjacentSquares(i, j);
+          const numMines = getAdjacentSquaresWithBomb(adjSquares);
+          minefield[i][j].setAdjacentMines(numMines);
         }
       }
 
@@ -169,7 +187,7 @@ function App() {
           <div key={indexRow} className="row">
             {row.map((square, indexCol) => (
               <button
-                className="square"
+                className={`square ${square.isUncovered ? "uncovered" : ""}`}
                 key={`${indexRow}-${indexCol}`}
                 onClick={(e) => handleOnClickSquare(e, indexRow, indexCol)}
                 onContextMenu={(e) =>
@@ -183,10 +201,10 @@ function App() {
                   ) : (
                     square.adjacentMines
                   )
-                ) : square.isClicked ? (
+                ) : square.isUncovered ? (
                   square.hasBomb ? (
                     <FontAwesomeIcon icon={faBomb} />
-                  ) : square.adjacentMines !== -1 ? (
+                  ) : square.adjacentMines > 0 ? (
                     square.adjacentMines
                   ) : (
                     ""
