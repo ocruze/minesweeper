@@ -13,7 +13,7 @@ function App() {
   const [gameover, setGameover] = useState(false);
 
   const generateMinefield = () => {
-    let newMinefield = [];
+    const newMinefield = [];
 
     for (let i = 0; i < numRows; i++) {
       let cols = [];
@@ -25,23 +25,20 @@ function App() {
       newMinefield.push(cols);
     }
 
-    // const numMines = 40;
+    for (let i = 0; i < numRows; i++) {
+      for (let j = 0; j < numCols; j++) {
+        const adjSquares = getAdjacentSquares(newMinefield, i, j);
+        const neighbSquares = getNeighboringSquares(newMinefield, i, j);
+        const adjMines = getNeighboringSquaresWithBomb(
+          newMinefield,
+          neighbSquares
+        );
 
-    // for (let k = 0; k < numMines; k++) {
-    //   let alreadyMinesNum = null;
-    //   let randRow = null;
-    //   let randCol = null;
-
-    //   do {
-    //     randRow = Math.floor(Math.random() * numRows);
-    //     randCol = Math.floor(Math.random() * numCols);
-
-    //     let adjSquares = getAdjacentSquares(randRow, randCol);
-    //     alreadyMinesNum = getAdjacentSquaresWithBomb(adjSquares);
-    //   } while (alreadyMinesNum > 2);
-
-    //   newMinefield[randRow][randCol].placeMine();
-    // }
+        newMinefield[i][j].setAdjacentMines(adjMines);
+        newMinefield[i][j].setAdjacentSquares(adjSquares);
+        newMinefield[i][j].setNeighboringSquares(neighbSquares);
+      }
+    }
 
     setMinefield(newMinefield);
   };
@@ -59,17 +56,13 @@ function App() {
     return true;
   };
 
-  const getAdjacentSquares = (indexRow, indexCol) => {
+  const getAdjacentSquares = (minefield, indexRow, indexCol) => {
     let adjSquares = [];
     let possibleAdjacent = [
-      [indexRow - 1, indexCol - 1],
       [indexRow - 1, indexCol],
-      [indexRow - 1, indexCol + 1],
       [indexRow, indexCol - 1],
       [indexRow, indexCol + 1],
-      [indexRow + 1, indexCol - 1],
       [indexRow + 1, indexCol],
-      [indexRow + 1, indexCol + 1],
     ];
 
     possibleAdjacent.forEach((coord) => {
@@ -83,7 +76,31 @@ function App() {
     return adjSquares;
   };
 
-  const getAdjacentSquaresWithBomb = (adjSquares) => {
+  const getNeighboringSquares = (minefield, indexRow, indexCol) => {
+    let neighbSquares = [];
+    let possibleNeighbor = [
+      [indexRow - 1, indexCol - 1],
+      [indexRow - 1, indexCol],
+      [indexRow - 1, indexCol + 1],
+      [indexRow, indexCol - 1],
+      [indexRow, indexCol + 1],
+      [indexRow + 1, indexCol - 1],
+      [indexRow + 1, indexCol],
+      [indexRow + 1, indexCol + 1],
+    ];
+
+    possibleNeighbor.forEach((coord) => {
+      try {
+        if (minefield[coord[0]][coord[1]]) {
+          neighbSquares.push(coord);
+        }
+      } catch (error) {}
+    });
+
+    return neighbSquares;
+  };
+
+  const getNeighboringSquaresWithBomb = (minefield, adjSquares) => {
     let numMines = 0;
 
     adjSquares.forEach((coord) => {
@@ -96,15 +113,21 @@ function App() {
   };
 
   const uncoverAdjacentMinesRecursive = (adjSquares) => {
-    adjSquares.forEach((coord) => {
-      let subAdjSquares = getAdjacentSquares(coord[0], coord[1]);
-      let subNumMines = getAdjacentSquaresWithBomb(subAdjSquares);
-      minefield[coord[0]][coord[1]].setAdjacentMines(subNumMines);
+    for (let i = 0; i < adjSquares.length; i++) {
+      const coord = adjSquares[i];
+      const currentAdjSquare = minefield[coord[0]][coord[1]];
 
-      if (subNumMines === 0) {
-        uncoverAdjacentMinesRecursive(subAdjSquares);
+      if (!currentAdjSquare.isUncovered && !currentAdjSquare.hasBomb) {
+        currentAdjSquare.uncover();
+
+        if (currentAdjSquare.adjacentMines === 0) {
+          const subAdjSquares = currentAdjSquare.adjacentSquares;
+          uncoverAdjacentMinesRecursive(subAdjSquares);
+        }
       }
-    });
+    }
+
+    setMinefield([...minefield]);
   };
 
   const handleNumRowsChange = (e) => {
@@ -126,11 +149,7 @@ function App() {
       if (square.hasBomb) {
         setGameover(true);
       } else {
-        const adjSquares = getAdjacentSquares(indexRow, indexCol);
-        const numMines = getAdjacentSquaresWithBomb(adjSquares);
-        square.setAdjacentMines(numMines);
-
-        uncoverAdjacentMinesRecursive(adjSquares);
+        uncoverAdjacentMinesRecursive(square.adjacentSquares);
         // setMinefield([...minefield]);
       }
     } else if (e.type === "contextmenu") {
@@ -149,9 +168,7 @@ function App() {
     if (gameover) {
       for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
-          const adjSquares = getAdjacentSquares(i, j);
-          const numMines = getAdjacentSquaresWithBomb(adjSquares);
-          minefield[i][j].setAdjacentMines(numMines);
+          minefield[i][j].uncover();
         }
       }
 
@@ -204,10 +221,8 @@ function App() {
                 ) : square.isUncovered ? (
                   square.hasBomb ? (
                     <FontAwesomeIcon icon={faBomb} />
-                  ) : square.adjacentMines > 0 ? (
-                    square.adjacentMines
                   ) : (
-                    ""
+                    square.adjacentMines
                   )
                 ) : square.isFlagged ? (
                   <FontAwesomeIcon icon={faFlag} />

@@ -1,9 +1,11 @@
 class Square {
     constructor() {
-        this.hasBomb = (Math.random() > 0.77);
+        this.hasBomb = (Math.random() > 0.70);
         this.isUncovered = false;
         this.isFlagged = false;
-        this.adjacentMines = -1;
+        this.adjacentMines = 0;
+        this.adjacentSquares = [];
+        this.neighboringSquares = [];
     }
 
     click() {
@@ -13,10 +15,8 @@ class Square {
             this.flag();
 
         } else {
-            // else toggle isUncovered
-            if (this.isUncovered)
-                this.isUncovered = false;
-            else
+            // uncover if not already uncovered
+            if (!this.isUncovered)
                 this.isUncovered = true;
         }
     }
@@ -31,10 +31,21 @@ class Square {
             this.isFlagged = true;
     }
 
+    uncover() {
+        this.isUncovered = true;
+    }
+
     setAdjacentMines(numMines) {
         this.adjacentMines = numMines;
-        if (this.adjacentMines >= 0 && !this.hasBomb)
-            this.isUncovered = true;
+    }
+
+
+    setAdjacentSquares(adjSquares) {
+        this.adjacentSquares = adjSquares;
+    }
+
+    setNeighboringSquares(neighbSquares) {
+        this.neighboringSquares = neighbSquares;
     }
 
     placeMine() {
