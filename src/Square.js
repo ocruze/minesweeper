@@ -1,9 +1,9 @@
 class Square {
     constructor() {
-        this.hasBomb = (Math.random() > 0.70);
+        this.hasMine = (Math.random() > 0.70);
         this.isUncovered = false;
         this.isFlagged = false;
-        this.adjacentMines = 0;
+        this.neighboringMines = 0;
         this.adjacentSquares = [];
         this.neighboringSquares = [];
     }
@@ -35,8 +35,8 @@ class Square {
         this.isUncovered = true;
     }
 
-    setAdjacentMines(numMines) {
-        this.adjacentMines = numMines;
+    setNeighboringMines(numMines) {
+        this.neighboringMines = numMines;
     }
 
 
@@ -49,7 +49,7 @@ class Square {
     }
 
     placeMine() {
-        this.hasBomb = true
+        this.hasMine = true
     }
 }
 

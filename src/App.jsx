@@ -5,10 +5,11 @@ import Square from "./Square";
 
 function App() {
   const MAX = 32;
-  const MIN = 16;
+  const MIN = 8;
+  const DEFAULT = 16;
 
-  const [numRows, setNumRows] = useState(MIN);
-  const [numCols, setNumCols] = useState(MIN);
+  const [numRows, setNumRows] = useState(DEFAULT);
+  const [numCols, setNumCols] = useState(DEFAULT);
   const [minefield, setMinefield] = useState([]);
   const [gameover, setGameover] = useState(false);
 
@@ -29,12 +30,12 @@ function App() {
       for (let j = 0; j < numCols; j++) {
         const adjSquares = getAdjacentSquares(newMinefield, i, j);
         const neighbSquares = getNeighboringSquares(newMinefield, i, j);
-        const adjMines = getNeighboringSquaresWithBomb(
+        const adjMines = getNeighboringSquaresWithMine(
           newMinefield,
           neighbSquares
         );
 
-        newMinefield[i][j].setAdjacentMines(adjMines);
+        newMinefield[i][j].setNeighboringMines(adjMines);
         newMinefield[i][j].setAdjacentSquares(adjSquares);
         newMinefield[i][j].setNeighboringSquares(neighbSquares);
       }
@@ -100,11 +101,11 @@ function App() {
     return neighbSquares;
   };
 
-  const getNeighboringSquaresWithBomb = (minefield, adjSquares) => {
+  const getNeighboringSquaresWithMine = (minefield, adjSquares) => {
     let numMines = 0;
 
     adjSquares.forEach((coord) => {
-      if (minefield[coord[0]][coord[1]].hasBomb) {
+      if (minefield[coord[0]][coord[1]].hasMine) {
         numMines++;
       }
     });
@@ -117,10 +118,10 @@ function App() {
       const coord = adjSquares[i];
       const currentAdjSquare = minefield[coord[0]][coord[1]];
 
-      if (!currentAdjSquare.isUncovered && !currentAdjSquare.hasBomb) {
+      if (!currentAdjSquare.isUncovered && !currentAdjSquare.hasMine) {
         currentAdjSquare.uncover();
 
-        if (currentAdjSquare.adjacentMines === 0) {
+        if (currentAdjSquare.neighboringMines === 0) {
           const subAdjSquares = currentAdjSquare.adjacentSquares;
           uncoverAdjacentMinesRecursive(subAdjSquares);
         }
@@ -146,7 +147,7 @@ function App() {
 
     if (e.type === "click") {
       square.click();
-      if (square.hasBomb) {
+      if (square.hasMine) {
         setGameover(true);
       } else {
         uncoverAdjacentMinesRecursive(square.adjacentSquares);
@@ -213,16 +214,16 @@ function App() {
                 disabled={gameover}
               >
                 {gameover ? (
-                  square.hasBomb ? (
+                  square.hasMine ? (
                     <FontAwesomeIcon icon={faBomb} />
                   ) : (
-                    square.adjacentMines
+                    square.neighboringMines
                   )
                 ) : square.isUncovered ? (
-                  square.hasBomb ? (
+                  square.hasMine ? (
                     <FontAwesomeIcon icon={faBomb} />
                   ) : (
-                    square.adjacentMines
+                    square.neighboringMines
                   )
                 ) : square.isFlagged ? (
                   <FontAwesomeIcon icon={faFlag} />
