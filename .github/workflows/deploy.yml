@@ -1,0 +1,21 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pinging deploy api
+        run: |
+          curl --request GET \
+            --url ${{ secrets.API_ROUTE }} \
+            --header 'X-Token:  ${{ secrets.X_TOKEN }}'
